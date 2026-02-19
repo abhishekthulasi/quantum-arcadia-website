@@ -50,14 +50,11 @@
             if (challengeRes.type === "failure")
                 throw new Error("Failed to get challenge");
 
-            // Unwrap the challenge from the action result structure
-            const challenge = challengeRes.data.challenge;
+            // This is actually the FULL configuration object from Go
+            const optionsFromServer = challengeRes.data.challenge;
 
             // 2. Browser Native Auth
-            const credential = await registerCredential(challenge, {
-                id: form.user.id,
-                email: form.user.email,
-            });
+            const credential = await registerCredential(optionsFromServer);
 
             // 3. Send New Key via Server Action
             const formData = new FormData();
@@ -77,7 +74,7 @@
             }
         } catch (err: any) {
             errorMessage = err.message || "Passkey setup failed.";
-            setTimeout(() => goto("/dashboard"), 2000); // Fallback to dashboard
+            setTimeout(() => goto("/error"), 2000); // Fallback to error page
         } finally {
             loading = false;
         }
@@ -248,7 +245,7 @@
                 </button>
 
                 <a
-                    href="/dashboard"
+                    href="/"
                     class="block text-sm text-zinc-500 hover:text-zinc-300"
                 >
                     Skip for now

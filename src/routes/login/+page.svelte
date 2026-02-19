@@ -6,8 +6,17 @@
     import { untrack } from "svelte";
     import { LAUNCHER_URL } from "$lib/constants";
 
+    const LoginStep = {
+        Passkey: "passkey",
+        SignChallenge: "sign_challenge",
+        OTPRequest: "otp_request",
+        OTPVerify: "otp_verify",
+    };
+
+    type LoginStepType = (typeof LoginStep)[keyof typeof LoginStep];
+
     interface LoginFormState {
-        mode?: "passkey" | "sign_challenge" | "otp_request" | "otp_verify";
+        mode?: LoginStepType;
         email?: string;
         challenge?: string;
         token?: string;
@@ -18,7 +27,7 @@
     let { form }: { form: LoginFormState } = $props();
 
     // Mutable State Initialization
-    let mode = $state(untrack(() => form?.mode) ?? "passkey");
+    let mode = $state(untrack(() => form?.mode) ?? LoginStep.Passkey);
     let email = $state(untrack(() => form?.email) ?? "");
     let errorMessage = $state(untrack(() => form?.error) ?? "");
     let loading = $state(false);
@@ -32,7 +41,7 @@
             if (form.error) errorMessage = form.error;
 
             // Handle Passkey Challenge (Auto-trigger)
-            if (mode === "sign_challenge" && form.challenge) {
+            if (mode === LoginStep.SignChallenge && form.challenge) {
                 processPasskeyChallenge(form.challenge);
             }
 
@@ -43,7 +52,7 @@
         }
     });
 
-    async function processPasskeyChallenge(challenge: string) {
+    async function processPasskeyChallenge(challenge: any) {
         loading = true;
         try {
             const credential = await authenticateCredential(challenge);
@@ -63,7 +72,7 @@
             } else {
                 errorMessage = "Passkey verification failed.";
                 loading = false;
-                mode = "passkey";
+                mode = LoginStep.Passkey;
             }
         } catch (err: unknown) {
             // Type Narrowing: 'any' -> 'unknown'
@@ -73,7 +82,7 @@
                     ? err.message
                     : "Passkey request cancelled or failed.";
             loading = false;
-            mode = "passkey";
+            mode = LoginStep.Passkey;
         }
     }
 
@@ -82,7 +91,7 @@
             // Use constant instead of hardcoded string
             window.location.href = `${LAUNCHER_URL}/callback?token=${token}`;
         } else {
-            goto("/dashboard");
+            goto("/");
         }
     }
 </script>
@@ -108,7 +117,7 @@
             </div>
         {/if}
 
-        {#if mode === "passkey" || mode === "sign_challenge"}
+        {#if mode === LoginStep.Passkey || mode === LoginStep.SignChallenge}
             <form
                 method="POST"
                 action="?/get_challenge"
@@ -152,7 +161,7 @@
 
                     <button
                         type="button"
-                        onclick={() => (mode = "otp_request")}
+                        onclick={() => (mode = LoginStep.OTPRequest)}
                         class="w-full text-sm text-zinc-500 hover:text-white transition-colors"
                     >
                         Trouble logging in? Use email code
@@ -166,7 +175,7 @@
                     </a>
                 </div>
             </form>
-        {:else if mode === "otp_request"}
+        {:else if mode === LoginStep.OTPRequest}
             <form
                 method="POST"
                 action="?/request_otp"
@@ -205,14 +214,14 @@
                     </button>
                     <button
                         type="button"
-                        onclick={() => (mode = "passkey")}
+                        onclick={() => (mode = LoginStep.Passkey)}
                         class="w-full text-sm text-zinc-500"
                     >
                         Back to Passkey
                     </button>
                 </div>
             </form>
-        {:else if mode === "otp_verify"}
+        {:else if mode === LoginStep.OTPVerify}
             <form
                 method="POST"
                 action="?/verify_otp"

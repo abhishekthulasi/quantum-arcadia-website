@@ -107,6 +107,6 @@ export const actions: Actions = {
             return fail(500, { error: 'Failed to save passkey' });
         }
 
-        redirect(303, '/dashboard');
+        redirect(303, '/');
     }
 };

@@ -145,7 +145,7 @@ export interface ApiResponse<T = any> {
  * The session object returned upon successful Login or Register.
  */
 export interface AuthSession {
-    token: string;        // JWT or Session ID (Set as HttpOnly cookie)
+    token: string;        // PASETO ID (Set as HttpOnly cookie)
     expiresAt: number;    // Unix Timestamp
     user: User;           // The logged-in user details
     refreshToken?: string;// For long-lived sessions (Trusted Devices)
