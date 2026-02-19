@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { enhance } from "$app/forms";
+    import { enhance, deserialize } from "$app/forms";
     import { registerCredential } from "$lib/auth/webauthn";
     import { goto } from "$app/navigation";
     import { untrack } from "svelte";
@@ -44,14 +44,18 @@
             const challengeReq = await fetch("?/passkey_challenge", {
                 method: "POST",
                 body: new FormData(),
+                headers: { "x-sveltekit-action": "true" },
             });
-            const challengeRes = await challengeReq.json();
+            const challengeRes = deserialize(await challengeReq.text());
 
-            if (challengeRes.type === "failure")
-                throw new Error("Failed to get challenge");
+            if (challengeRes.type !== "success") {
+                throw new Error(
+                    `Failed to get challenge: ${challengeRes.type}`,
+                );
+            }
 
             // This is actually the FULL configuration object from Go
-            const optionsFromServer = challengeRes.data.challenge;
+            const optionsFromServer = challengeRes.data?.challenge;
 
             // 2. Browser Native Auth
             const credential = await registerCredential(optionsFromServer);
@@ -74,7 +78,7 @@
             }
         } catch (err: any) {
             errorMessage = err.message || "Passkey setup failed.";
-            setTimeout(() => goto("/error"), 2000); // Fallback to error page
+            // setTimeout(() => goto("/error"), 2000); // Fallback to error page
         } finally {
             loading = false;
         }
