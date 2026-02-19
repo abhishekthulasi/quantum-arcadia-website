@@ -99,7 +99,8 @@ export const actions: Actions = {
                 method: 'POST',
                 headers: {
                     Authorization: `Bearer ${token}`,
-                    'Content-Type': 'application/json'
+                    'Content-Type': 'application/json',
+                    'User-Agent': request.headers.get('user-agent') || 'Unknown Svelte Server'
                 },
                 body: credential as string // Already JSON string
             });

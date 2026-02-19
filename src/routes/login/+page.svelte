@@ -34,24 +34,6 @@
 
     const isLauncher = page.url.searchParams.get("source") === "launcher";
 
-    $effect(() => {
-        if (form) {
-            if (form.mode) mode = form.mode;
-            if (form.email) email = form.email;
-            if (form.error) errorMessage = form.error;
-
-            // Handle Passkey Challenge (Auto-trigger)
-            if (mode === LoginStep.SignChallenge && form.challenge) {
-                processPasskeyChallenge(form.challenge);
-            }
-
-            // Handle Login Success
-            if (form.success && form.token) {
-                handleSuccess(form.token);
-            }
-        }
-    });
-
     async function processPasskeyChallenge(challenge: any) {
         loading = true;
         try {
@@ -83,6 +65,9 @@
                     : "Passkey request cancelled or failed.";
             loading = false;
             mode = LoginStep.Passkey;
+
+            // Clear the form prop manually so it doesn't linger
+            form = { ...form, challenge: undefined, mode: undefined };
         }
     }
 
@@ -124,9 +109,20 @@
                 use:enhance={() => {
                     loading = true;
                     errorMessage = "";
-                    return async ({ update }) => {
+
+                    return async ({ result, update }) => {
                         loading = false;
-                        update();
+
+                        // `update` applies the server action results to the `form` prop
+                        await update({ reset: false });
+
+                        // If successful, trigger the prompt EXACTLY ONCE here
+                        if (
+                            result.type === "success" &&
+                            result.data?.challenge
+                        ) {
+                            processPasskeyChallenge(result.data.challenge);
+                        }
                     };
                 }}
             >
